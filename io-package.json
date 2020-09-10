@@ -179,7 +179,11 @@
         "interval": 60000,
         "cpu": {
             "cpu_frequency": {
-                "command": "cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_cur_freq",
+                "command": "test -r /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_cur_freq "+
+                             "&& cat /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_cur_freq "+
+                             "|| test -r /sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq "+
+                                  "&& cat /sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq "+
+                                  "|| echo -1000",
                 "regexp": "(.*)",
                 "post": "$1/1000"
             },
