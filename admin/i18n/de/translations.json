@@ -6,6 +6,7 @@
     "Network:": "Network",
     "Poll": "Pollen",
     "Port": "Port",
+    "Port numbers relate to Broadcom SOC channel, not physical pins.": "Die Portnummern beziehen sich auf den Broadcom SOC-Kanal, nicht auf physische Pins.",
     "RPI-Monitor Adapter settings": "RPI-Monitor Adapter-Einstellungen",
     "Raspberry:": "Raspberry",
     "SDCard:": "SD Karte",
