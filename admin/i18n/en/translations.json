@@ -15,7 +15,7 @@
     "Uptime:": "Uptime",
     "WLAN:": "WLAN",
     "in": "Input",
-    "button": "Button with debounce, click, press, etc.",
+    "button": "Button with click, double-click, long press, etc.",
     "out": "Output",
     "outhigh": "Output, initial value 1",
     "outlow": "Output, initial value 0"

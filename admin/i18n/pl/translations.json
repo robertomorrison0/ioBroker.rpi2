@@ -15,6 +15,7 @@
     "Uptime:": "Czas pracy",
     "WLAN:": "WLAN",
     "in": "Wejście",
+    "button": "Przycisk z kliknięciem, podwójnym kliknięciem, długim naciśnięciem itp.",
     "out": "Wyjście",
     "outhigh": "Wyjście, wartość początkowa 1",
     "outlow": "Wyjście, wartość początkowa 0"

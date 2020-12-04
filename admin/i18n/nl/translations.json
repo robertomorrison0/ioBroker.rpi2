@@ -15,6 +15,7 @@
     "Uptime:": "Uptime",
     "WLAN:": "WLAN",
     "in": "Ingang",
+    "button": "Knop met klikken, dubbelklikken, lang indrukken, etc.",
     "out": "Uitgang",
     "outhigh": "Uitgang, beginwaarde 1",
     "outlow": "Uitgang, beginwaarde 0"

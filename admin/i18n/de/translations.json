@@ -15,6 +15,7 @@
     "Uptime:": "Uptime",
     "WLAN:": "WLAN",
     "in": "Eingang",
+    "button": "Taste mit Klick, Doppelklick, langem Drücken usw.",
     "out": "Ausgang",
     "outhigh": "Ausgang, Startwert 1",
     "outlow": "Ausgang, Startwert 0"
