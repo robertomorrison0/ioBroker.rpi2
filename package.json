@@ -13,7 +13,8 @@
         "versteckt <husky.koglhof@icloud.com>"
     ],
     "optionalDependencies": {
-        "rpi-gpio": "^2.1.3"
+        "rpi-gpio": "^2.1.3",
+        "rpi-gpio-buttons": "^1.2.0"
     },
     "dependencies": {
         "sync-exec": "^0.6.2",
