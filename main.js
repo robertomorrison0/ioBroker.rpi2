@@ -350,7 +350,7 @@ function readValue(port) {
         if (err) {
             adapter.log.error('Cannot read port ' + port + ': ' + err);
         } else {
-            adapter.setState('gpio.' + port + '.state', !!value, true);
+            adapter.setState('gpio.' + port + '.state', (adapter.config.inputPullUp ? !value : value), true);
         }
     });
 }
@@ -474,9 +474,6 @@ function syncPortButton(port, data, callback) {
 }
 
 const debounceTimers = [];
-// TODO: Should be in settings
-const debounceTimeout = 20;
-
 function initPorts() {
     let anyGpioEnabled = false;
     let buttonPorts = [];
@@ -513,9 +510,15 @@ function initPorts() {
     let gpioButtons;
     if (buttonPorts.length > 0) {
         try {
-            // TODO: Have global options for pull up/down, debounce timing, etc.
+            adapter.log.debug(`buttonPullUp: ${adapter.config.buttonPullUp}`);
             const rpi_gpio_buttons = require('rpi-gpio-buttons');
-            gpioButtons = rpi_gpio_buttons(buttonPorts, { mode: rpi_gpio_buttons.MODE_BCM, pressed: 1000, usePullUp: false });
+            gpioButtons = rpi_gpio_buttons(buttonPorts, {
+                mode: rpi_gpio_buttons.MODE_BCM,
+                usePullUp: adapter.config.buttonPullUp,
+                debounce: adapter.config.buttonDebounceMs,
+                pressed: adapter.config.buttonPressMs,
+                clicked: adapter.config.buttonDoubleMs
+            });
         } catch (e) {
             gpioButtons = null;
             adapter.log.error('Cannot initialize GPIO Buttons: ' + e);
@@ -598,8 +601,8 @@ function initPorts() {
                         debounceTimers[port] = setTimeout((t_port, t_value) => {
                             debounceTimers[t_port] = null;
                             adapter.log.debug(`GPIO debounced on port ${t_port}: ${t_value}`);
-                            adapter.setState('gpio.' + t_port + '.state', !!t_value, true);
-                        }, debounceTimeout, port, value);
+                            adapter.setState('gpio.' + t_port + '.state', (adapter.config.inputPullUp ? !t_value : t_value), true);
+                        }, adapter.config.inputDebounceMs, port, value);
                     }
                 }
             });
