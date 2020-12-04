@@ -137,6 +137,23 @@
     // the function loadSettings has to exist ...
     function load(settings, onChange) {
         if (!settings) return;
+        $('.value').each(function () {
+            var $key = $(this);
+            var id = $key.attr('id');
+            if ($key.attr('type') === 'checkbox') {
+                // do not call onChange direct, because onChange could expect some arguments
+                $key.prop('checked', settings[id])
+                    .on('change', () => onChange())
+                    ;
+            } else {
+                // do not call onChange direct, because onChange could expect some arguments
+                $key.val(settings[id])
+                    .on('change', () => onChange())
+                    .on('keyup', () => onChange())
+                    ;
+            }
+        });
+
         for (var key in settings) {
             if (!settings.hasOwnProperty(key) || settings === 'gpios') continue;
             setValue(key, settings[key], onChange);
@@ -221,6 +238,44 @@
             </div>
         </div>
         <div id="tab-gpios" class="col s12 page">
+            <div class="row">
+                <div class="col s12 m3 input-field ">
+                    <select class="value" id="inputPullUp">
+                        <option value="true" class="translate">Yes</option>
+                        <option value="false" class="translate">No</option>
+                    </select>
+                    <label class="translate" for="inputPullUp">Inputs are wired pull up?</label>
+                    <span>For regular input ports. Are your inputs wired with a pull up resistor?</span>
+                </div>
+                <div class="col s12 m3 input-field">
+                    <input id="inputDebounceMs" class="value" type="number" min="0"/>
+                    <label for="inputDebounceMs" class="translate">Input debounce timeout</label>
+                    <span>For regular input ports. Value must be unchanged for this long (ms) before it is stored.</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col s12 m3 input-field">
+                    <select class="value" id="buttonPullUp">
+                        <option value="true" class="translate">Yes</option>
+                        <option value="false" class="translate">No</option>
+                    </select>
+                    <label class="translate" for="buttonPullUp">Buttons are wired pull up?</label>
+                    <span>Are your buttons wired with a pull up resistor?</span>
+                </div>
+                <div class="col s12 m3 input-field">
+                    <input id="buttonDebounceMs" class="value" type="number" min="0"/>
+                    <label for="buttonDebounceMs" class="translate">Button debounce period</label>
+                </div>
+                <div class="col s12 m3 input-field">
+                    <input id="buttonPressMs" class="value" type="number" min="0"/>
+                    <label for="buttonPressMs" class="translate">Button press period</label>
+                    <span>How long must a button be held for to trigger long press (ms)?</span>
+                </div>
+                <div class="col s12 m3 input-field">
+                    <input id="buttonDoubleMs" class="value" type="number" min="0"/>
+                    <label for="buttonDoubleMs" class="translate">Button double click timeout (ms).</label>
+                </div>
+            </div>
             <table>
                 <tr>
                     <td>
