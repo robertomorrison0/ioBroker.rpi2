@@ -6,6 +6,7 @@
     "Network:": "Netwerk",
     "Poll": "poll",
     "Port": "Haven",
+    "Port numbers relate to Broadcom SOC channel, not physical pins.": "Poortnummers hebben betrekking op het Broadcom SOC-kanaal, niet op fysieke pinnen.",
     "RPI-Monitor Adapter settings": "RPI-Monitor Adapter-instellingen",
     "Raspberry:": "Framboos",
     "SDCard:": "SD-kaart",

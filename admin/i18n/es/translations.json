@@ -6,6 +6,7 @@
     "Network:": "Red",
     "Poll": "Encuesta",
     "Port": "Puerto",
+    "Port numbers relate to Broadcom SOC channel, not physical pins.": "Los números de puerto se refieren al canal Broadcom SOC, no a los pines físicos.",
     "RPI-Monitor Adapter settings": "Configuración del adaptador RPI-Monitor",
     "Raspberry:": "Frambuesa",
     "SDCard:": "Tarjeta SD",
