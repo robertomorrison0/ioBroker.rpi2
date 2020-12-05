@@ -341,6 +341,10 @@ function parser() {
     }
 }
 
+function inputPullUp(value) {
+    return (adapter.config.inputPullUp ? !value : value);
+}
+
 function readValue(port) {
     if (!gpio) {
         return adapter.log.error('GPIO is not initialized!');
@@ -350,7 +354,7 @@ function readValue(port) {
         if (err) {
             adapter.log.error('Cannot read port ' + port + ': ' + err);
         } else {
-            adapter.setState('gpio.' + port + '.state', (adapter.config.inputPullUp ? !value : value), true);
+            adapter.setState('gpio.' + port + '.state', inputPullUp(value), true);
         }
     });
 }
@@ -475,6 +479,10 @@ function syncPortButton(port, data, callback) {
 
 const debounceTimers = [];
 function initPorts() {
+
+    adapter.log.debug('Inputs are pull ' + (adapter.config.inputPullUp ? 'up' : 'down') + '.');
+    adapter.log.debug('Buttons are pull ' + (adapter.config.buttonPullUp ? 'up' : 'down') + '.');
+
     let anyGpioEnabled = false;
     let buttonPorts = [];
 
@@ -510,7 +518,6 @@ function initPorts() {
     let gpioButtons;
     if (buttonPorts.length > 0) {
         try {
-            adapter.log.debug(`buttonPullUp: ${adapter.config.buttonPullUp}`);
             const rpi_gpio_buttons = require('rpi-gpio-buttons');
             gpioButtons = rpi_gpio_buttons(buttonPorts, {
                 mode: rpi_gpio_buttons.MODE_BCM,
@@ -601,7 +608,7 @@ function initPorts() {
                         debounceTimers[port] = setTimeout((t_port, t_value) => {
                             debounceTimers[t_port] = null;
                             adapter.log.debug(`GPIO debounced on port ${t_port}: ${t_value}`);
-                            adapter.setState('gpio.' + t_port + '.state', (adapter.config.inputPullUp ? !t_value : t_value), true);
+                            adapter.setState('gpio.' + t_port + '.state', inputPullUp(t_value), true);
                         }, adapter.config.inputDebounceMs, port, value);
                     }
                 }
