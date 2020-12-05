@@ -146,10 +146,16 @@
             "husky-koglhof <husky.koglhof@icloud.com>"
         ],
         "osDependencies": {
-            "linux": ["build-essential", "python"]
+            "linux": [
+                "build-essential",
+                "python"
+            ]
         },
         "dependencies": [
-            {"js-controller":  ">=2.0.0"}
+            {
+                "js-controller": ">=2.0.0",
+                "admin": ">=3.0.0"
+            }
         ],
         "license": "MIT",
         "singletonHost": true,
