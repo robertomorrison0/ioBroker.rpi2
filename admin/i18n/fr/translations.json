@@ -18,5 +18,12 @@
     "button": "Bouton avec clic, double-clic, appui long, etc.",
     "out": "Sortie",
     "outhigh": "Sortie, valeur initiale 1",
-    "outlow": "Sortie, valeur initiale 0"
+    "outlow": "Sortie, valeur initiale 0",
+    "Inputs are wired pull up": "Les entrées sont câblées vers le haut",
+    "Input debounce period (ms)": "Période anti-rebond d'entrée (ms)",
+    "Buttons are wired pull up": "Les boutons sont tirés vers le haut",
+    "Button debounce period (ms)": "Période anti-rebond du bouton (ms)",
+    "Button long press period (ms)": "Période de pression longue du bouton (ms)",
+    "Button double click period (ms)": "Période de double clic sur le bouton (ms)"
+
 }

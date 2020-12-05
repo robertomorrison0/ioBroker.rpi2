@@ -18,5 +18,12 @@
     "button": "Knop met klikken, dubbelklikken, lang indrukken, etc.",
     "out": "Uitgang",
     "outhigh": "Uitgang, beginwaarde 1",
-    "outlow": "Uitgang, beginwaarde 0"
+    "outlow": "Uitgang, beginwaarde 0",
+    "Inputs are wired pull up": "Ingangen zijn bedraad pull-up",
+    "Input debounce period (ms)": "Invoer debounce-periode (ms)",
+    "Buttons are wired pull up": "Knopen zijn bedraad omhoog te trekken",
+    "Button debounce period (ms)": "Knop debounce-periode (ms)",
+    "Button long press period (ms)": "Knop lang indrukken (ms)",
+    "Button double click period (ms)": "Knop dubbelklikperiode (ms)"
+
 }

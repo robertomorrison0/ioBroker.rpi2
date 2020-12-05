@@ -18,5 +18,11 @@
     "button": "Button with click, double-click, long press, etc.",
     "out": "Output",
     "outhigh": "Output, initial value 1",
-    "outlow": "Output, initial value 0"
+    "outlow": "Output, initial value 0",
+    "Inputs are wired pull up": "Inputs are wired pull up",
+    "Input debounce period (ms)": "Input debounce period (ms)",
+    "Buttons are wired pull up": "Buttons are wired pull up",
+    "Button debounce period (ms)": "Button debounce period (ms)",
+    "Button long press period (ms)": "Button long press period (ms)",
+    "Button double click period (ms)": "Button double click period (ms)"
 }
