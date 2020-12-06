@@ -16,7 +16,15 @@
     "Uptime:": "Tiempo de actividad",
     "WLAN:": "WLAN",
     "in": "Entrada",
+    "button": "Botón con clic, doble clic, pulsación larga, etc.",
     "out": "Salida",
     "outhigh": "Salida, valor inicial 1",
-    "outlow": "Salida, valor inicial 0"
+    "outlow": "Salida, valor inicial 0",
+    "Inputs are wired pull up": "Las entradas están cableadas",
+    "Input debounce period (ms)": "Período de antirrebote de entrada (ms)",
+    "Buttons are wired pull up": "Los botones están conectados con cable",
+    "Button debounce period (ms)": "Período de rebote del botón (ms)",
+    "Button long press period (ms)": "Período de pulsación prolongada del botón (ms)",
+    "Button double click period (ms)": "Período de doble clic del botón (ms)"
+
 }

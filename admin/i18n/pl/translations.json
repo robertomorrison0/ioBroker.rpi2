@@ -16,7 +16,15 @@
     "Uptime:": "Czas pracy",
     "WLAN:": "WLAN",
     "in": "Wejście",
+    "button": "Przycisk z kliknięciem, podwójnym kliknięciem, długim naciśnięciem itp.",
     "out": "Wyjście",
     "outhigh": "Wyjście, wartość początkowa 1",
-    "outlow": "Wyjście, wartość początkowa 0"
+    "outlow": "Wyjście, wartość początkowa 0",
+    "Inputs are wired pull up": "Wejścia są przewodowe podciągane",
+    "Input debounce period (ms)": "Okres odbicia wejściowego (ms)",
+    "Buttons are wired pull up": "Przyciski są na drutach podciągane",
+    "Button debounce period (ms)": "Okres odbijania przycisku (ms)",
+    "Button long press period (ms)": "Długie naciśnięcie przycisku (ms)",
+    "Button double click period (ms)": "Okres podwójnego kliknięcia przycisku (ms)"
+
 }

@@ -8,6 +8,11 @@
 const utils = require('@iobroker/adapter-core'); // Get common adapter utils
 let gpio;
 let errorsLogged = {};
+const debounceTimers = [];
+
+// Which button events will we capture and have states for?
+// See https://www.npmjs.com/package/rpi-gpio-buttons
+const buttonEvents = [ 'pressed', 'clicked', 'clicked_pressed', 'double_clicked', 'released' ];
 
 const adapter = new utils.Adapter({
     name: 'rpi2',
@@ -61,6 +66,13 @@ const adapter = new utils.Adapter({
         }
     },
     unload: function (callback) {
+        // Cancel any debounce timers
+        debounceTimers.forEach((timer) => {
+            if (timer != null) {
+                clearTimeout(timer);
+            }
+        });
+        // TODO: destroy rpi-gpio-buttons when this is fixed: https://github.com/bnielsen1965/rpi-gpio-buttons/issues/9
         if (gpio) {
             gpio.destroy(() => callback && callback());
         } else {
@@ -337,6 +349,10 @@ function parser() {
     }
 }
 
+function inputPullUp(value) {
+    return (adapter.config.inputPullUp ? !value : value);
+}
+
 function readValue(port) {
     if (!gpio) {
         return adapter.log.error('GPIO is not initialized!');
@@ -346,48 +362,56 @@ function readValue(port) {
         if (err) {
             adapter.log.error('Cannot read port ' + port + ': ' + err);
         } else {
-            adapter.setState('gpio.' + port + '.state', !!value, true);
+            adapter.setState('gpio.' + port + '.state', inputPullUp(value), true);
         }
     });
 }
 
 function syncPort(port, data, callback) {
+    data.isButton = (data.input === 'button');
+    data.isInput = (data.input === 'in' || data.input === 'true' || data.input === true || data.isButton);
     adapter.getObject('gpio.' + port + '.state', (err, obj) => {
-        if (data.enabled) {
-            let isInput = (data.input === 'in' || data.input === 'true' || data.input === true);
-
+        if (data.enabled && !data.isButton) {
             if (err || !obj || !obj.common) {
                 obj = {
                     common: {
                         name:  'GPIO ' + port,
                         type:  'boolean',
-                        role:  isInput ? 'indicator' : 'switch',
-                        read:  isInput,
-                        write: !isInput
+                        role:  data.isInput ? 'indicator' : 'switch',
+                        read:  data.isInput,
+                        write: !data.isInput
                     },
                     native: {
                     },
                     type: 'state'
                 };
-                adapter.setObject('gpio.' + port + '.state', obj, () =>
-                    syncPortDirection(port, data, callback));
+                adapter.extendObject('gpio.' + port + '.state', obj, () => {
+                        syncPortDirection(port, data, callback);
+                        syncPortButton(port, data, callback);
+                    });
             } else {
-                if (obj.common.read !== isInput) {
-                    obj.common.read  = isInput;
-                    obj.common.write = !isInput;
-                    adapter.setObject('gpio.' + port + '.state', obj, () =>
-                        syncPortDirection(port, data, callback));
-                } else {
+                if (obj.common.read !== data.isInput) {
+                    obj.common.read  = data.isInput;
+                    obj.common.write = !data.isInput;
+                    adapter.extendObject('gpio.' + port + '.state', obj, () => {
+                            syncPortDirection(port, data, callback);
+                            syncPortButton(port, data, callback);
+                        });
+                    } else {
                     syncPortDirection(port, data, callback);
+                    syncPortButton(port, data, callback);
                 }
             }
         } else {
             if (obj && obj.common) {
                 adapter.delObject('gpio.' + port + '.state', () =>
-                    adapter.delState('gpio.' + port + '.state', () =>
-                        syncPortDirection(port, data, callback)));
+                    adapter.delState('gpio.' + port + '.state', () => {
+                            syncPortDirection(port, data, callback);
+                            syncPortButton(port, data, callback);
+                        }));
             } else {
                 syncPortDirection(port, data, callback);
+                syncPortButton(port, data, callback);
             }
         }
     });
@@ -396,7 +420,6 @@ function syncPort(port, data, callback) {
 function syncPortDirection(port, data, callback) {
     adapter.getObject('gpio.' + port + '.isInput', (err, obj) => {
         if (data.enabled) {
-            let isInput = (data.input === 'in' || data.input === 'true' || data.input === true);
             if (err || !obj || !obj.common) {
                 obj = {
                     common: {
@@ -410,10 +433,10 @@ function syncPortDirection(port, data, callback) {
                     },
                     type: 'state'
                 };
-                adapter.setObject('gpio.' + port + '.isInput', obj, () =>
-                    adapter.setState('gpio.' + port + '.isInput', isInput, true, callback));
+                adapter.extendObject('gpio.' + port + '.isInput', obj, () =>
+                    adapter.setState('gpio.' + port + '.isInput', data.isInput, true, callback));
             } else {
-                adapter.setState('gpio.' + port + '.isInput', isInput, true, callback);
+                adapter.setState('gpio.' + port + '.isInput', data.isInput, true, callback);
             }
         } else {
             if (obj && obj.common) {
@@ -426,19 +449,64 @@ function syncPortDirection(port, data, callback) {
     });
 }
 
+function buttonStateName(port, eventName) {
+    return 'gpio.' + port + '.' + eventName;
+}
+
+function syncPortButton(port, data, callback) {
+    buttonEvents.forEach((eventName) => {
+        const stateName = buttonStateName(port, eventName);
+        adapter.getObject(stateName, (err, obj) => {
+            if (data.enabled && data.isButton) {
+                if (err || !obj || !obj.common) {
+                    obj = {
+                        common: {
+                            name:  'GPIO ' + port + ' ' + eventName,
+                            type:  'boolean',
+                            role:  'button',
+                            read:  false,
+                            write: true
+                        },
+                        native: {
+                        },
+                        type: 'state'
+                    };
+                    adapter.extendObject(stateName, obj, callback);
+                }
+            } else {
+                if (obj && obj.common) {
+                    adapter.delObject(stateName, () =>
+                        adapter.delState(stateName, callback));
+                } else {
+                    if (callback) callback();
+                }
+            }
+        });
+    });
+}
+
 function initPorts() {
-    let anyEnabled = false;
-    let anyInputs  = false;
+
+    adapter.log.debug('Inputs are pull ' + (adapter.config.inputPullUp ? 'up' : 'down') + '.');
+    adapter.log.debug('Buttons are pull ' + (adapter.config.buttonPullUp ? 'up' : 'down') + '.');
+
+    let anyGpioEnabled = false;
+    let buttonPorts = [];
 
     if (adapter.config.gpios && adapter.config.gpios.length) {
         for (let pp = 0; pp < adapter.config.gpios.length; pp++) {
             if (!adapter.config.gpios[pp] || !adapter.config.gpios[pp].enabled) continue;
-            anyEnabled = true;
-            anyInputs = anyInputs || (adapter.config.gpios[pp].input === 'in' || adapter.config.gpios[pp].input === 'true' || adapter.config.gpios[pp].input === true);
+            if (adapter.config.gpios[pp].input == 'button') {
+                // This is a button - add to array to initialise module
+                buttonPorts.push(pp);
+            } else {
+                // Must just be regular GPIO
+                anyGpioEnabled = true;
+            }
         }
     }
 
-    if (anyEnabled) {
+    if (anyGpioEnabled) {
         try {
             gpio = require('rpi-gpio');
         } catch (e) {
@@ -454,8 +522,25 @@ function initPorts() {
         }
     }
 
+    let gpioButtons;
+    if (buttonPorts.length > 0) {
+        try {
+            const rpi_gpio_buttons = require('rpi-gpio-buttons');
+            gpioButtons = rpi_gpio_buttons(buttonPorts, {
+                mode: rpi_gpio_buttons.MODE_BCM,
+                usePullUp: adapter.config.buttonPullUp,
+                debounce: adapter.config.buttonDebounceMs,
+                pressed: adapter.config.buttonPressMs,
+                clicked: adapter.config.buttonDoubleMs
+            });
+        } catch (e) {
+            gpioButtons = null;
+            adapter.log.error('Cannot initialize GPIO Buttons: ' + e);
+        }
+    }
+
     if (adapter.config.gpios && adapter.config.gpios.length) {
-        let count = 0;
+        let haveInputs = false;
         for (let p = 0; p < adapter.config.gpios.length; p++) {
 
             if (!adapter.config.gpios[p]) continue;
@@ -476,24 +561,19 @@ function initPorts() {
 
                 switch(adapter.config.gpios[p].input) {
                     case 'in':
-                        count++;
-                        (function (port){
-                            gpio.setup(port, gpio.DIR_IN, gpio.EDGE_BOTH, err => {
-                                if (!err) {
-                                    readValue(port);
-                                } else {
+                        (function (port) {
+                            haveInputs = true;
+                            gpio.setup(port, gpio.DIR_IN, gpio.EDGE_BOTH, (err) => {
+                                if (err) {
                                     adapter.log.error('Cannot setup port ' + port + ' as input: ' + err);
-                                }
-                                if (!--count) {
-                                    adapter.log.debug('Register onchange handler');
-                                    // register on change handler
-                                    gpio.on('change', (port, value) => {
-                                        adapter.log.debug('GPIO change on port ' + port + ': ' + value);
-                                        adapter.setState('gpio.' + port + '.state', !!value, true);
-                                    });
+                                } else {
+                                    readValue(port);
                                 }
                             });
                         })(p);
+                        break;
+                    case 'button':
+                        // Do nothing - jus here to prevent error below.
                         break;
                     case 'out':
                         (function (port){
@@ -517,6 +597,40 @@ function initPorts() {
                         adapter.log.error('Cannot setup port ' + port + ': invalid direction type.');
                 }
             }
+        }
+
+        // Setup input change handler - only has to be done once no matter how many inputs we have
+        if (haveInputs && gpio) {
+            adapter.log.debug('Register onchange handler');
+            gpio.on('change', (port, value) => {
+                // Ignore buttons as they are handled below
+                if (adapter.config.gpios[port].input == 'in') {
+                    adapter.log.debug('GPIO change on port ' + port + ': ' + value);
+                    if (debounceTimers[port] != null) {
+                        // Timer is running but state changed (must be back) so just cancel timer.
+                        clearTimeout(debounceTimers[port]);
+                        debounceTimers[port] = null;
+                    } else {
+                        // Start a timer and report to state if doesn't revert within given period.
+                        debounceTimers[port] = setTimeout((t_port, t_value) => {
+                            debounceTimers[t_port] = null;
+                            adapter.log.debug(`GPIO debounced on port ${t_port}: ${t_value}`);
+                            adapter.setState('gpio.' + t_port + '.state', inputPullUp(t_value), true);
+                        }, adapter.config.inputDebounceMs, port, value);
+                    }
+                }
+            });
+        }
+
+        // Setup events for buttons - only has to be done once no matter how many buttons we have
+        if (buttonPorts.length > 0 && gpioButtons /* to check init was good */) {
+            buttonEvents.forEach((eventName) => {
+                gpioButtons.on(eventName, (port) => {
+                    adapter.log.debug(`${eventName} triggered for port ${port}`);
+                    const stateName = buttonStateName(port, eventName);
+                    adapter.setState(stateName, true, true);
+                });
+            });
         }
     } else {
         adapter.log.info('GPIO ports are not configured');

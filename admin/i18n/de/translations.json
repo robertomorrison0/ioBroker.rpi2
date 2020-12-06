@@ -16,7 +16,14 @@
     "Uptime:": "Uptime",
     "WLAN:": "WLAN",
     "in": "Eingang",
+    "button": "Taste mit Klick, Doppelklick, langem Drücken usw.",
     "out": "Ausgang",
     "outhigh": "Ausgang, Startwert 1",
-    "outlow": "Ausgang, Startwert 0"
+    "outlow": "Ausgang, Startwert 0",
+    "Inputs are wired pull up": "Die Eingänge sind hochgezogen",
+    "Input debounce period (ms)": "Entprellungsperiode (ms) eingeben",
+    "Buttons are wired pull up": "Die Tasten sind hochgezogen",
+    "Button debounce period (ms)": "Entprellungszeitraum für Schaltflächen (ms)",
+    "Button long press period (ms)": "Taste lange Druckdauer (ms)",
+    "Button double click period (ms)": "Doppelklickzeit (ms)"
 }

@@ -16,7 +16,15 @@
     "Uptime:": "正常运行时间",
     "WLAN:": "WLAN",
     "in": "在",
+    "button": "单击，双击，长按等按钮",
     "out": "出来",
     "outhigh": "输出，初始值1",
-    "outlow": "输出，初始值0"
+    "outlow": "输出，初始值0",
+    "Inputs are wired pull up": "输入有线上拉",
+    "Input debounce period (ms)": "输入去抖动周期（毫秒）",
+    "Buttons are wired pull up": "按钮有线拉起",
+    "Button debounce period (ms)": "按钮反跳周期（毫秒）",
+    "Button long press period (ms)": "按钮长按周期（毫秒）",
+    "Button double click period (ms)": "按钮双击时间（毫秒）"
+
 }
