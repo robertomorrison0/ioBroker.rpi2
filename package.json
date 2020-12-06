@@ -18,14 +18,14 @@
     },
     "dependencies": {
         "sync-exec": "^0.6.2",
-        "@iobroker/adapter-core": "^2.3.1"
+        "@iobroker/adapter-core": "^2.4.0"
     },
     "devDependencies": {
         "gulp": "^4.0.2",
-        "mocha": "^7.1.2",
+        "mocha": "^8.2.1",
         "chai": "^4.2.0",
-        "axios": "^0.19.2",
-        "@iobroker/testing": "^2.2.0"
+        "axios": "^0.21.0",
+        "@iobroker/testing": "^2.3.0"
     },
     "homepage": "https://github.com/iobroker-community-adapters/ioBroker.rpi2",
     "license": "MIT",
