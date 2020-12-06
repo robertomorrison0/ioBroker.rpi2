@@ -385,7 +385,7 @@ function syncPort(port, data, callback) {
                     },
                     type: 'state'
                 };
-                adapter.setObject('gpio.' + port + '.state', obj, () => {
+                adapter.extendObject('gpio.' + port + '.state', obj, () => {
                         syncPortDirection(port, data, callback);
                         syncPortButton(port, data, callback);
                     });
@@ -393,7 +393,7 @@ function syncPort(port, data, callback) {
                 if (obj.common.read !== data.isInput) {
                     obj.common.read  = data.isInput;
                     obj.common.write = !data.isInput;
-                    adapter.setObject('gpio.' + port + '.state', obj, () => {
+                    adapter.extendObject('gpio.' + port + '.state', obj, () => {
                             syncPortDirection(port, data, callback);
                             syncPortButton(port, data, callback);
                         });
@@ -433,7 +433,7 @@ function syncPortDirection(port, data, callback) {
                     },
                     type: 'state'
                 };
-                adapter.setObject('gpio.' + port + '.isInput', obj, () =>
+                adapter.extendObject('gpio.' + port + '.isInput', obj, () =>
                     adapter.setState('gpio.' + port + '.isInput', data.isInput, true, callback));
             } else {
                 adapter.setState('gpio.' + port + '.isInput', data.isInput, true, callback);
@@ -471,7 +471,7 @@ function syncPortButton(port, data, callback) {
                         },
                         type: 'state'
                     };
-                    adapter.setObject(stateName, obj, callback);
+                    adapter.extendObject(stateName, obj, callback);
                 }
             } else {
                 if (obj && obj.common) {
