@@ -8,6 +8,7 @@
 const utils = require('@iobroker/adapter-core'); // Get common adapter utils
 let gpio;
 let errorsLogged = {};
+const debounceTimers = [];
 
 // Which button events will we capture and have states for?
 // See https://www.npmjs.com/package/rpi-gpio-buttons
@@ -65,6 +66,13 @@ const adapter = new utils.Adapter({
         }
     },
     unload: function (callback) {
+        // Cancel any debounce timers
+        debounceTimers.forEach((timer) => {
+            if (timer != null) {
+                clearTimeout(timer);
+            }
+        });
+        // TODO: destroy rpi-gpio-buttons when this is fixed: https://github.com/bnielsen1965/rpi-gpio-buttons/issues/9
         if (gpio) {
             gpio.destroy(() => callback && callback());
         } else {
@@ -477,7 +485,6 @@ function syncPortButton(port, data, callback) {
     });
 }
 
-const debounceTimers = [];
 function initPorts() {
 
     adapter.log.debug('Inputs are pull ' + (adapter.config.inputPullUp ? 'up' : 'down') + '.');
