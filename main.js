@@ -367,126 +367,105 @@ function readValue(port) {
     });
 }
 
-function syncPort(port, data, callback) {
-    data.isButton = (data.input === 'button');
-    data.isInput = (data.input === 'in' || data.input === 'true' || data.input === true || data.isButton);
-    adapter.getObject('gpio.' + port + '.state', (err, obj) => {
-        if (data.enabled && !data.isButton) {
-            if (err || !obj || !obj.common) {
-                obj = {
-                    common: {
-                        name:  'GPIO ' + port,
-                        type:  'boolean',
-                        role:  data.isInput ? 'indicator' : 'switch',
-                        read:  data.isInput,
-                        write: !data.isInput
-                    },
-                    native: {
-                    },
-                    type: 'state'
-                };
-                adapter.extendObject('gpio.' + port + '.state', obj, () => {
-                        syncPortDirection(port, data, callback);
-                        syncPortButton(port, data, callback);
-                    });
-            } else {
-                if (obj.common.read !== data.isInput) {
-                    obj.common.read  = data.isInput;
-                    obj.common.write = !data.isInput;
-                    adapter.extendObject('gpio.' + port + '.state', obj, () => {
-                            syncPortDirection(port, data, callback);
-                            syncPortButton(port, data, callback);
-                        });
-                    } else {
-                    syncPortDirection(port, data, callback);
-                    syncPortButton(port, data, callback);
-                }
-            }
-        } else {
-            if (obj && obj.common) {
-                adapter.delObject('gpio.' + port + '.state', () =>
-                    adapter.delState('gpio.' + port + '.state', () => {
-                            syncPortDirection(port, data, callback);
-                            syncPortButton(port, data, callback);
-                        }));
-            } else {
-                syncPortDirection(port, data, callback);
-                syncPortButton(port, data, callback);
-            }
+// syncPort waits for everything it calls, so upon return, when the GPIO
+// handlers, etc. are setup their states are guaranteed to be in place.
+
+// Our own deleteState that logs an error only if it's not, Not Exists
+async function deleteState(stateName) {
+    try {
+        await adapter.delObjectAsync(stateName);
+    } catch (err) {
+        if (err != 'Error: Not exists') {
+            throw new Error(`Failed to delete object ${stateName}: ${err}`);
         }
-    });
+    }
+    try {
+        await adapter.delStateAsync(stateName);
+    } catch (err) {
+        if (err != 'Error: Not exists') {
+            throw new Error(`Failed to delete state ${stateName}: ${err}`);
+        }
+    }
 }
 
-function syncPortDirection(port, data, callback) {
-    adapter.getObject('gpio.' + port + '.isInput', (err, obj) => {
-        if (data.enabled) {
-            if (err || !obj || !obj.common) {
-                obj = {
-                    common: {
-                        name:  'GPIO ' + port + ' direction',
-                        type:  'boolean',
-                        role:  'state',
-                        read:  true,
-                        write: false
-                    },
-                    native: {
-                    },
-                    type: 'state'
-                };
-                adapter.extendObject('gpio.' + port + '.isInput', obj, () =>
-                    adapter.setState('gpio.' + port + '.isInput', data.isInput, true, callback));
-            } else {
-                adapter.setState('gpio.' + port + '.isInput', data.isInput, true, callback);
-            }
-        } else {
-            if (obj && obj.common) {
-                adapter.delObject('gpio.' + port + '.isInput', () =>
-                    adapter.delState('gpio.' + port + '.isInput', callback));
-            } else {
-                if (callback) callback();
-            }
-        }
-    });
+async function syncPort(port, data) {
+    data.isButton = (data.input === 'button');
+    data.isInput = (data.input === 'in' || data.input === 'true' || data.input === true || data.isButton);
+    
+    const stateName = 'gpio.' + port + '.state';
+    if (data.enabled && !data.isButton) {
+        const obj = {
+            common: {
+                name:  'GPIO ' + port,
+                type:  'boolean',
+                role:  data.isInput ? 'indicator' : 'switch',
+                read:  data.isInput,
+                write: !data.isInput
+            },
+            native: {
+            },
+            type: 'state'
+        };
+        // extendObject creates one if it doesn't exist - same below
+        await adapter.extendObjectAsync(stateName, obj);
+    } else {
+        await deleteState(stateName);
+    }
+    await syncPortDirection(port, data);
+    await syncPortButton(port, data);
+}
+
+async function syncPortDirection(port, data) {
+    const stateName = 'gpio.' + port + '.isInput';
+    if (data.enabled) {
+        adapter.log.debug(`Creating ${stateName}`);
+        const obj = {
+            common: {
+                name:  'GPIO ' + port + ' direction',
+                type:  'boolean',
+                role:  'state',
+                read:  true,
+                write: false
+            },
+            native: {
+            },
+            type: 'state'
+        };
+        await adapter.extendObjectAsync(stateName, obj);
+        await adapter.setStateAsync(stateName, data.isInput, true);
+    } else {
+        await deleteState(stateName);
+    }
 }
 
 function buttonStateName(port, eventName) {
     return 'gpio.' + port + '.' + eventName;
 }
 
-function syncPortButton(port, data, callback) {
-    buttonEvents.forEach((eventName) => {
+async function syncPortButton(port, data) {
+    for (const eventName of buttonEvents) {
         const stateName = buttonStateName(port, eventName);
-        adapter.getObject(stateName, (err, obj) => {
-            if (data.enabled && data.isButton) {
-                if (err || !obj || !obj.common) {
-                    obj = {
-                        common: {
-                            name:  'GPIO ' + port + ' ' + eventName,
-                            type:  'boolean',
-                            role:  'button',
-                            read:  false,
-                            write: true
-                        },
-                        native: {
-                        },
-                        type: 'state'
-                    };
-                    adapter.extendObject(stateName, obj, callback);
-                }
-            } else {
-                if (obj && obj.common) {
-                    adapter.delObject(stateName, () =>
-                        adapter.delState(stateName, callback));
-                } else {
-                    if (callback) callback();
-                }
-            }
-        });
-    });
+        if (data.enabled && data.isButton) {
+            const obj = {
+                common: {
+                    name:  'GPIO ' + port + ' ' + eventName,
+                    type:  'boolean',
+                    role:  'button',
+                    read:  false,
+                    write: true
+                },
+                native: {
+                },
+                type: 'state'
+            };
+            await adapter.extendObjectAsync(stateName, obj);
+        } else {
+            await deleteState(stateName);
+        }
+    };
 }
 
-function initPorts() {
-
+async function initPorts() {
     adapter.log.debug('Inputs are pull ' + (adapter.config.inputPullUp ? 'up' : 'down') + '.');
     adapter.log.debug('Buttons are pull ' + (adapter.config.buttonPullUp ? 'up' : 'down') + '.');
 
@@ -545,7 +524,7 @@ function initPorts() {
 
             if (!adapter.config.gpios[p]) continue;
 
-            syncPort(p, adapter.config.gpios[p] || {});
+            await syncPort(p, adapter.config.gpios[p] || {});
 
             if (gpio && adapter.config.gpios[p].enabled) {
                 /* Ensure backwards compatibility of property .input
