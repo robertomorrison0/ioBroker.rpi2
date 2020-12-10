@@ -121,21 +121,38 @@ let config;
 let oldstyle = false;
 
 function main() {
-    // TODO: Check which Objects we provide
-    setInterval(parser, adapter.config.interval || 60000);
+    if (anyParserConfigEnabled()) {
+        // TODO: Check which Objects we provide
+        setInterval(parser, adapter.config.interval || 60000);
 
-    const version = process.version;
-    const va = version.split('.');
-    if (va[0] === 'v0' && va[1] === '10') {
-        adapter.log.debug('NODE Version = ' + version + ', we need new exec-sync');
-        exec     = require('sync-exec');
-        oldstyle = true;
+        const version = process.version;
+        const va = version.split('.');
+        if (va[0] === 'v0' && va[1] === '10') {
+            adapter.log.debug('NODE Version = ' + version + ', we need new exec-sync');
+            exec     = require('sync-exec');
+            oldstyle = true;
+        } else {
+            adapter.log.debug('NODE Version = ' + version + ', we need new execSync');
+            exec     = require('child_process').execSync;
+        }
+        parser();
     } else {
-        adapter.log.debug('NODE Version = ' + version + ', we need new execSync');
-        exec     = require('child_process').execSync;
+        adapter.log.info('No parser items enabled - skipping');
     }
-    parser();
     initPorts();
+}
+
+function anyParserConfigEnabled() {
+    for (const configKey of Object.keys(adapter.config)) {
+        if (configKey.indexOf('c_') >= 0) {
+            adapter.log.debug(`${configKey} looks like a parser item`);
+            if (adapter.config[configKey] === true) {
+                adapter.log.debug(`${configKey} is enabled`);
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 function parser() {
