@@ -25,6 +25,7 @@
     "Buttons are wired pull up": "Les boutons sont tirés vers le haut",
     "Button debounce period (ms)": "Période anti-rebond du bouton (ms)",
     "Button long press period (ms)": "Période de pression longue du bouton (ms)",
-    "Button double click period (ms)": "Période de double clic sur le bouton (ms)"
-
+    "Button double click period (ms)": "Période de double clic sur le bouton (ms)",
+    "Enable": "Activer",
+    "Label": "Étiquette"
 }

@@ -25,6 +25,7 @@
     "Buttons are wired pull up": "Przyciski są na drutach podciągane",
     "Button debounce period (ms)": "Okres odbijania przycisku (ms)",
     "Button long press period (ms)": "Długie naciśnięcie przycisku (ms)",
-    "Button double click period (ms)": "Okres podwójnego kliknięcia przycisku (ms)"
-
+    "Button double click period (ms)": "Okres podwójnego kliknięcia przycisku (ms)",
+    "Enable": "Włączyć",
+    "Label": "Etykieta"
 }
