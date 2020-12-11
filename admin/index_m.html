@@ -66,19 +66,18 @@
                 $(this).find('.portType').val(portType);
             }
 
+            function setDisabled(item) {
+                var status = item.prop('checked');
+                item.parents('.portSetting').find('.portType').siblings('input').prop('disabled', !status);
+                item.parents('.portSetting').find('.portLabel').prop('disabled', !status);
+            }
             // Enable/disable as loaded.
-            $(this).find('.portEnabled').each(function () {
-                var status = $(this).prop('checked');
-                $(this).parents('.portSetting').find('.portType').siblings('input').prop('disabled', !status);
-                $(this).parents('.portSetting').find('.portLabel').prop('disabled', !status);
-            });
-
+            // TODO: seems to be a but in Materialize where drop-down isn't disabled on load.
+            $(this).find('.portEnabled').each(setDisabled);
             // Enable/disable type on the fly
             $(this).find('.portEnabled').on('change', function () {
                 onChange();
-                var status = $(this).prop('checked');
-                $(this).parents('.portSetting').find('.portType').siblings('input').prop('disabled', !status);
-                $(this).parents('.portSetting').find('.portLabel').prop('disabled', !status);
+                setDisabled($(this));
             });
             $(this).find('.portLabel').on('change', onChange).on('keyup', onChange);
             $(this).find('.portType').on('change', onChange);
