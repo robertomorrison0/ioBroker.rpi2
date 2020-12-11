@@ -73,7 +73,9 @@
             }
             // Enable/disable as loaded.
             // TODO: seems to be a bug in Materialize where drop-down isn't disabled on load.
-            $(this).find('.portEnabled').each(setDisabled);
+            $(this).find('.portEnabled').each(function () {
+                setDisabled($(this));
+            });
             // Enable/disable type on the fly
             $(this).find('.portEnabled').on('change', function () {
                 onChange();
