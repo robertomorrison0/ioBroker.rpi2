@@ -72,7 +72,7 @@
                 item.parents('.portSetting').find('.portLabel').prop('disabled', !status);
             }
             // Enable/disable as loaded.
-            // TODO: seems to be a but in Materialize where drop-down isn't disabled on load.
+            // TODO: seems to be a bug in Materialize where drop-down isn't disabled on load.
             $(this).find('.portEnabled').each(setDisabled);
             // Enable/disable type on the fly
             $(this).find('.portEnabled').on('change', function () {
