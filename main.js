@@ -418,7 +418,7 @@ async function syncPort(port, data) {
         await adapter.extendObjectAsync(channelName, {
             type: 'channel',
             common: {
-                name: data.label === '' ? 'GPIO ' + port : data.label,
+                name: !data.hasOwnProperty('label') || data.label == '' ? 'GPIO ' + port : data.label,
                 // TODO: should we do more than just add this as 'info'?
                 role: 'info'
             }
