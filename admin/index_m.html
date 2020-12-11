@@ -53,7 +53,17 @@
             if (data.hasOwnProperty(gpioNo)) {
                 $(this).find('.portEnabled').prop('checked', data[gpioNo].enabled);
                 $(this).find('.portLabel').val(data[gpioNo].label);
-                $(this).find('.portType').val(data[gpioNo].input);
+                //ensure backwards compatibility: was true for "in" and false for "out" in older versions:
+                // { enabled: true, input: "false" }
+                // now it is "in", "out", "outlow" or "outhigh":
+                // { enabled: true, type: "in", label: "..." }
+                let portType = data[gpioNo].input;
+                if (portType === 'true' || portType === true) {
+                    portType = 'in';
+                } else if (portType === 'false' || portType === false) {
+                    portType = 'out';
+                }
+                $(this).find('.portType').val(portType);
             }
 
             // Enable/disable as loaded.
