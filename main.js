@@ -396,11 +396,15 @@ async function deleteState(stateName) {
             throw new Error(`Failed to delete object ${stateName}: ${err}`);
         }
     }
+    await deleteObject(stateName);
+}
+
+ async function deleteObject(objectName) {
     try {
-        await adapter.delStateAsync(stateName);
+        await adapter.delStateAsync(objectName);
     } catch (err) {
         if (err != 'Error: Not exists') {
-            throw new Error(`Failed to delete state ${stateName}: ${err}`);
+            throw new Error(`Failed to delete object ${objectName}: ${err}`);
         }
     }
 }
@@ -408,6 +412,20 @@ async function deleteState(stateName) {
 async function syncPort(port, data) {
     data.isButton = (data.input === 'button');
     data.isInput = (data.input === 'in' || data.input === 'true' || data.input === true || data.isButton);
+
+    const channelName = 'gpio.' + port;
+    if (data.enabled) {
+        await adapter.extendObjectAsync(channelName, {
+            type: 'channel',
+            common: {
+                name: data.label === '' ? 'GPIO ' + port : data.label,
+                // TODO: should we do more than just add this as 'info'?
+                role: 'info'
+            }
+        });
+    } else {
+        await deleteObject(channelName);
+    }
     
     const stateName = 'gpio.' + port + '.state';
     if (data.enabled && !data.isButton) {
@@ -491,6 +509,11 @@ async function initPorts() {
 
     if (adapter.config.gpios && adapter.config.gpios.length) {
         for (let pp = 0; pp < adapter.config.gpios.length; pp++) {
+            // syncPort sets up object tree. Do it now so all ready when
+            // physical GPIOs are enabled below.
+
+            await syncPort(pp, adapter.config.gpios[pp] || {});
+
             if (!adapter.config.gpios[pp] || !adapter.config.gpios[pp].enabled) continue;
             if (adapter.config.gpios[pp].input == 'button') {
                 // This is a button - add to array to initialise module
@@ -538,10 +561,7 @@ async function initPorts() {
     if (adapter.config.gpios && adapter.config.gpios.length) {
         let haveInputs = false;
         for (let p = 0; p < adapter.config.gpios.length; p++) {
-
             if (!adapter.config.gpios[p]) continue;
-
-            await syncPort(p, adapter.config.gpios[p] || {});
 
             if (gpio && adapter.config.gpios[p].enabled) {
                 /* Ensure backwards compatibility of property .input
