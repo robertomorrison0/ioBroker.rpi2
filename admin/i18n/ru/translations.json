@@ -25,6 +25,7 @@
     "Buttons are wired pull up": "Кнопки проводные подтягиваются вверх",
     "Button debounce period (ms)": "Период устранения дребезга кнопки (мс)",
     "Button long press period (ms)": "Длительность нажатия кнопки (мс)",
-    "Button double click period (ms)": "Период двойного нажатия кнопки (мс)"
-
+    "Button double click period (ms)": "Период двойного нажатия кнопки (мс)",
+    "Enable": "включить",
+    "Label": "этикетка"
 }

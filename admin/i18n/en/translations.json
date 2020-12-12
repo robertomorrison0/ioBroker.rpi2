@@ -25,5 +25,7 @@
     "Buttons are wired pull up": "Buttons are wired pull up",
     "Button debounce period (ms)": "Button debounce period (ms)",
     "Button long press period (ms)": "Button long press period (ms)",
-    "Button double click period (ms)": "Button double click period (ms)"
+    "Button double click period (ms)": "Button double click period (ms)",
+    "Enable": "Enable",
+    "Label": "Label"
 }

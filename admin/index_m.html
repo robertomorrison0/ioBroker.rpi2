@@ -32,89 +32,73 @@
     ];
 
     function showGpios(data, onChange) {
-        var text = '';
-        for (var p = 0; p < allowedGPIOs.length; p++) {
-            if (!data[allowedGPIOs[p]]) data[allowedGPIOs[p]] = {enabled: false, input: 'false'};
-            text += '<tr>';
-            text += '<td style="text-align: center">' + allowedGPIOs[p] + '</td>';
-            text += '<td style="text-align: center"><input class="gpio-value" type="checkbox" data-index="' + allowedGPIOs[p] + '" data-option="enabled"/><span></span></td>';
-            text += '<td style="text-align: center"><select class="gpio-value" data-index="' + allowedGPIOs[p] + '" data-option="input">' +
-                            '<option value="in">'  + _('in') + '</option>' +
-                            '<option value="button">'  + _('button') + '</option>' +
-                            '<option value="out">' + _('out') + '</option>' +
-                            '<option value="outlow">' + _('outlow') + '</option>' +
-                            '<option value="outhigh">' + _('outhigh') + '</option>' +
-                    '</select><label></label></td>';
-            text += '</tr>';
-            if (p === Math.round(allowedGPIOs.length / 2) - 1) {
-                $('#gpios1').html(text);
-                text = '';
-            }
+        // Duplicate the template row for each allowed GPIO
+        let lp = 0;
+        let gpioDataTemplate = $('#gpioDataTemplate').clone().removeAttr('id').prop("outerHTML");
+        for (lp = allowedGPIOs.length - 1; lp >= 0; lp--) {
+            let gpioNo = allowedGPIOs[lp];
+            const thisGpio = gpioDataTemplate.replaceAll('{gpioNo}', gpioNo);
+            // 
+            $('#gpioDataTemplate').after(thisGpio);
         }
-        $('#gpios2').html(text);
-        $('.gpio-value').each(function () {
-            var attr  = $(this).data('option');
-            var index = $(this).data('index');
-            if ($(this).attr('type') === 'checkbox') {
-                $(this).prop('checked', data[index][attr] === 'true' || data[index][attr] === true);
-            } else {
-                //ensure backwards compatibility: was true for "in" and false for "out" in older versions,
-                // now it is "in", "out", "outlow" or "outhigh"
-                var convertedvalue = data[index][attr];
-                if (data[index][attr] === 'true' || data[index][attr] === true) { convertedvalue = 'in'; }
-                else if (data[index][attr] === 'false' || data[index][attr] === false) { convertedvalue = 'out'; }
-                $(this).val(convertedvalue);
-            }
-
-            if (attr === 'enabled') {
-                var $input = $('[data-index="' + index + '"][data-option="input"]');
-                if (data[index][attr] === 'true' || data[index][attr] === true) {
-                    $input.removeClass('disabled');
-                } else {
-                    $input.addClass('disabled');
-                }
-                $input.select();
-            }
-
-            $(this).on('change', function () {
-                onChange();
-                var attr  = $(this).data('option');
-                var index = $(this).data('index');
-                if (attr === 'enabled') {
-                    var $input = $('[data-index="' + index + '"][data-option="input"]');
-                    if ($(this).prop('checked')) {
-                        $input.removeClass('disabled');
-                    } else {
-                        $input.addClass('disabled');
-                    }
-                    $input.select();
-                }
-            });
-        }).find('select').select();
+        // Remove the used template
+        $('#gpioDataTemplate').remove();
 
         M.updateTextFields();
 
-        // workaround for materialize checkbox problem
-        $('.gpio-value').find('input[type="checkbox"]+span').off('click').on('click', function () {
-            var $input = $(this).prev();
-            if (!$input.prop('disabled')) {
-                $input.prop('checked', !$input.prop('checked')).trigger('change');
+        lp = 0;
+        $('.portSetting').each(function () {
+            let gpioNo = allowedGPIOs[lp];
+
+            if (data.hasOwnProperty(gpioNo)) {
+                $(this).find('.portEnabled').prop('checked', data[gpioNo].enabled);
+                $(this).find('.portLabel').val(data[gpioNo].label);
+                //ensure backwards compatibility: was true for "in" and false for "out" in older versions:
+                // { enabled: true, input: "false" }
+                // now it is "in", "out", "outlow" or "outhigh":
+                // { enabled: true, type: "in", label: "..." }
+                let portType = data[gpioNo].input;
+                if (portType === 'true' || portType === true) {
+                    portType = 'in';
+                } else if (portType === 'false' || portType === false) {
+                    portType = 'out';
+                }
+                $(this).find('.portType').val(portType);
             }
+
+            function setDisabled(item) {
+                var status = item.prop('checked');
+                item.parents('.portSetting').find('.portType').siblings('input').prop('disabled', !status);
+                item.parents('.portSetting').find('.portLabel').prop('disabled', !status);
+            }
+            // Enable/disable as loaded.
+            // TODO: seems to be a bug in Materialize where drop-down isn't disabled on load.
+            $(this).find('.portEnabled').each(function () {
+                setDisabled($(this));
+            });
+            // Enable/disable type on the fly
+            $(this).find('.portEnabled').on('change', function () {
+                onChange();
+                setDisabled($(this));
+            });
+            $(this).find('.portLabel').on('change', onChange).on('keyup', onChange);
+            $(this).find('.portType').on('change', onChange);
+
+            lp++;
         });
     }
 
     function getGpios() {
         var data = [];
 
-        $('.gpio-value').each(function () {
-            var attr = $(this).data('option');
-            var index = $(this).data('index');
-            data[index] = data[index] || {};
-            if ($(this).attr('type') === 'checkbox') {
-                data[index][attr] = $(this).prop('checked');
-            } else {
-                data[index][attr] = $(this).val();
+        let lp = 0;
+        $('.portSetting').each(function () {
+            data[allowedGPIOs[lp]] = {
+                enabled:  $(this).find('.portEnabled').prop('checked'),
+                input:  $(this).find('.portType').val(),
+                label:  $(this).find('.portLabel').val(),
             }
+            lp++;
         });
         return data;
     }
@@ -271,39 +255,26 @@
                     Port numbers relate to Broadcom SOC channel, not physical pins.
                 </div>
             </div>
-
-            <table>
-                <tr>
-                    <td>
-                        <table>
-                            <thead>
-                            <tr class="ui-widget-header">
-                                <td style="width: 40px; text-align: center" class="translate">Port</td>
-                                <td style="width: 70px; text-align: center" class="translate">Enabled</td>
-                                <td style="width: 70px; text-align: center" class="translate">Type</td>
-                            </tr>
-                            </thead>
-                            <tbody id="gpios1">
-
-                            </tbody>
-                        </table>
-                    </td>
-                    <td style="padding-left: 20px">
-                        <table>
-                            <thead>
-                            <tr class="ui-widget-header">
-                                <td style="width: 70px; text-align: center" class="translate">Port</td>
-                                <td style="width: 70px; text-align: center" class="translate">Enabled</td>
-                                <td style="width: 70px; text-align: center" class="translate">Type</td>
-                            </tr>
-                            </thead>
-                            <tbody id="gpios2">
-
-                            </tbody>
-                        </table>
-                    </td>
-                </tr>
-            </table>
+            <div class="row portSetting" id="gpioDataTemplate">
+                <div class="col s12 m2 input-field">
+                    <input type="checkbox" class="portEnabled" id="portEnabled{gpioNo}"/>
+                    <span><span class="translate">Enable</span> {gpioNo}</span>
+                </div>
+                <div class="col s12 m5 input-field">
+                    <select class="portType" id="portType{gpioNo}">
+                        <option value="in" class="translate">in</option>
+                        <option value="button" class="translate">button</option>
+                        <option value="out" class="translate">out</option>
+                        <option value="outlow" class="translate">outlow</option>
+                        <option value="outhigh" class="translate">outhigh</option>
+                    </select>
+                    <label for="portType{gpioNo}" class="translate">Type</label>
+                </div>
+                <div class="col s12 m5 input-field">
+                    <input class="portLabel" type="text" id="portLabel{gpioNo}"/>
+                    <label for="portLabel{gpioNo}" class="translate">Label</label>
+                </div>
+            </div>
         </div>
     </div>
 </div>

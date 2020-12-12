@@ -25,6 +25,7 @@
     "Buttons are wired pull up": "按钮有线拉起",
     "Button debounce period (ms)": "按钮反跳周期（毫秒）",
     "Button long press period (ms)": "按钮长按周期（毫秒）",
-    "Button double click period (ms)": "按钮双击时间（毫秒）"
-
+    "Button double click period (ms)": "按钮双击时间（毫秒）",
+    "Enable": "启用",
+    "Label": "标签"
 }
