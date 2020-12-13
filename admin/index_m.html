@@ -251,6 +251,13 @@
                 </div>
             </div>
             <div class="row">
+                <div class="col s12 m4 input-field">
+                    <input id="dhtPollInterval" class="value" type="number" min="350"/>
+                    <label for="dhtPollInterval" class="translate">Polling interval for DHTxx/AM23xx devices (ms)</label>
+                    <span class="translate>Minimum recommended is 2s. Set to zero to disable polling.</span>
+                </div>
+            </div>
+            <div class="row">
                 <div class="col s12 translate">
                     Port numbers relate to Broadcom SOC channel, not physical pins.
                 </div>
@@ -267,6 +274,8 @@
                         <option value="out" class="translate">out</option>
                         <option value="outlow" class="translate">outlow</option>
                         <option value="outhigh" class="translate">outhigh</option>
+                        <option value="dht11" class="translate">DHT11</option>
+                        <option value="dht22" class="translate">DHT22/AM23xx</option>
                     </select>
                     <label for="portType{gpioNo}" class="translate">Type</label>
                 </div>

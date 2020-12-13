@@ -27,5 +27,7 @@
     "Button long press period (ms)": "Période de pression longue du bouton (ms)",
     "Button double click period (ms)": "Période de double clic sur le bouton (ms)",
     "Enable": "Activer",
-    "Label": "Étiquette"
+    "Label": "Étiquette",
+    "Polling interval for DHTxx/AM23xx devices (ms)": "Intervalle d'interrogation pour les appareils DHTxx / AM23xx (ms)",
+    "Minimum recommended is 2s. Set to zero to disable polling.": "Le minimum recommandé est de 2 s. Réglez sur zéro pour désactiver l'interrogation."
 }

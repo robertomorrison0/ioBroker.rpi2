@@ -27,5 +27,7 @@
     "Button long press period (ms)": "Button long press period (ms)",
     "Button double click period (ms)": "Button double click period (ms)",
     "Enable": "Enable",
-    "Label": "Label"
+    "Label": "Label",
+    "Polling interval for DHTxx/AM23xx devices (ms)": "Polling interval for DHTxx/AM23xx devices (ms)",
+    "Minimum recommended is 2s. Set to zero to disable polling.": "Minimum recommended is 2s. Set to zero to disable polling."
 }
