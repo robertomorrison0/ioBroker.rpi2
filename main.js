@@ -7,6 +7,7 @@
 
 const utils = require('@iobroker/adapter-core'); // Get common adapter utils
 let gpio;
+let gpioButtons;
 let errorsLogged = {};
 const debounceTimers = [];
 const intervalTimers = [];
@@ -77,9 +78,14 @@ const adapter = new utils.Adapter({
                 clearTimeout(timer);
             }
         });
-        // TODO: destroy rpi-gpio-buttons when this is fixed: https://github.com/bnielsen1965/rpi-gpio-buttons/issues/9
         if (gpio) {
-            gpio.destroy(() => callback && callback());
+            if (gpioButtons) {
+                gpioButtons.destroy().then(() => {
+                    gpio.destroy(() => callback && callback());
+                });
+            } else {
+                gpio.destroy(() => callback && callback());
+            }
         } else {
             callback && callback();
         }
@@ -622,13 +628,15 @@ async function initPorts() {
 
             if (buttonPorts.length > 0) {
                 try {
-                    const rpi_gpio_buttons = require('rpi-gpio-buttons');
-                    gpioButtons = rpi_gpio_buttons(buttonPorts, {
-                        mode: rpi_gpio_buttons.MODE_BCM,
+                    gpioButtons = new rpi_gpio_buttons({
+                        pins: buttonPorts,
                         usePullUp: adapter.config.buttonPullUp,
-                        debounce: adapter.config.buttonDebounceMs,
-                        pressed: adapter.config.buttonPressMs,
-                        clicked: adapter.config.buttonDoubleMs
+                        timing: {
+                            debounce: adapter.config.buttonDebounceMs,
+                            pressed: adapter.config.buttonPressMs,
+                            clicked: adapter.config.buttonDoubleMs
+                        },
+                        gpio: gpio
                     });
                 } catch (e) {
                     gpioButtons = null;
