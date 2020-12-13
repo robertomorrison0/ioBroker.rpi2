@@ -137,6 +137,12 @@ For instance PI2:
 +-----+-----+---------+------+---+---Pi 2---+---+------+---------+-----+-----+
 ```
 
+## DHTxx/AM23xx Sensors
+You can read from DHT11, DHT22 and AM2302 temperature/humidity sensors.
+
+Connect such a sensor to a GPIO pin as described on the [node-dht-sensor](https://www.npmjs.com/package/node-dht-sensor) package page. Multiple sensors can be connected to *multiple* pins (this is *not* a bus system) as discussed.
+
+
 ## Changelog
 
 ### 1.2.0 (2020-01-17)
