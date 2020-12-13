@@ -518,8 +518,14 @@ async function syncPortButton(port, data) {
     };
 }
 
+function temperatureStateName(port) {
+    return 'gpio.' + port + '.temperature';
+}
+function humidityStateName(port) {
+    return 'gpio.' + port + '.humidity';
+}
+
 async function syncPortTempHum(port, data) {
-    let stateName = 'gpio.' + port + '.temperature';
     if (data.enabled && data.isTempHum) {
         const obj = {
             common: {
@@ -533,11 +539,10 @@ async function syncPortTempHum(port, data) {
             },
             type: 'state'
         };
-        await adapter.extendObjectAsync(stateName, obj);
+        await adapter.extendObjectAsync(temperatureStateName(port), obj);
     } else {
-        await deleteState(stateName);
+        await deleteState(temperatureStateName(port));
     }
-    stateName = 'gpio.' + port + '.humidity';
     if (data.enabled && data.isTempHum) {
         const obj = {
             common: {
@@ -551,9 +556,9 @@ async function syncPortTempHum(port, data) {
             },
             type: 'state'
         };
-        await adapter.extendObjectAsync(stateName, obj);
+        await adapter.extendObjectAsync(humidityStateName(port), obj);
     } else {
-        await deleteState(stateName);
+        await deleteState(humidityStateName(port));
     }
 }
 
@@ -740,6 +745,8 @@ async function initPorts() {
                                     adapter.log.error(`Failed to read DHTxx/AM23xx: ${type}/${port}`);
                                 } else {
                                     adapter.log.debug(`Read DHTxx/AM23xx: ${type}/${port} : ${temperature}°C, humidity: ${humidity}%`);
+                                    adapter.setState(temperatureStateName(port), temperature, true);
+                                    adapter.setState(humidityStateName(port), humidity, true);
                                 }
                             });
                         }
