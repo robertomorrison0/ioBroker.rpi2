@@ -606,7 +606,6 @@ async function initPorts() {
                     break;
                 case 'dht11':
                 case 'dht22':
-                    adapter.log.debug(`Found ${adapter.config.gpios[port].input} on port ${port}`);
                     dhtPorts.push(port);
                     break;
                 default:
