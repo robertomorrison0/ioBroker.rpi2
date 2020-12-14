@@ -67,17 +67,17 @@ const adapter = new utils.Adapter({
             }
         }
     },
-    unload: function () {
+    unload: async function () {
         // Cancel any intervals
         for (const interval of intervalTimers) {
             clearInterval(interval);
         }
         // Cancel any debounce timers
-        debounceTimers.forEach((timer) => {
+        for (const timer of debounceTimers) {
             if (timer != null) {
                 clearTimeout(timer);
             }
-        });
+        };
         if (gpio) {
             if (gpioButtons) {
                 await gpioButtons.destroy().catch((err) => {
