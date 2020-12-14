@@ -12,7 +12,7 @@ RPI-Monitor implementation for integration into ioBroker. It is the same impleme
 ## Important Information
 Works only with node >= 0.12
 
-**ioBroker must run under root to may control GPIOs.**
+**ioBroker needs special permissions to control GPIOs.** On most Linux distributions this can be achieved by adding the ioBroker user to the `gpio` group (recommended) or running ioBroker under `root` (less secure).
 
 ## Installation
 After installation you have to configure all required modules via administration page.
