@@ -67,7 +67,7 @@ const adapter = new utils.Adapter({
             }
         }
     },
-    unload: function (callback) {
+    unload: function () {
         // Cancel any intervals
         for (const interval of intervalTimers) {
             clearInterval(interval);
@@ -80,14 +80,13 @@ const adapter = new utils.Adapter({
         });
         if (gpio) {
             if (gpioButtons) {
-                gpioButtons.destroy().then(() => {
-                    gpio.destroy(() => callback && callback());
+                await gpioButtons.destroy().catch((err) => {
+                    console.error(`Failed to destroy gpioButtons: ${err}`);
                 });
-            } else {
-                gpio.destroy(() => callback && callback());
-            }
-        } else {
-            callback && callback();
+            };
+            await gpio.promise.destroy().catch((err) => {
+                console.error(`Failed to destroy gpio: ${err}`);
+            });
         }
     }
 });
