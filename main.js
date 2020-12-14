@@ -609,8 +609,8 @@ function setupGpio(gpioPorts, buttonPorts) {
             adapter.log.debug('Register onchange handler');
             gpio.on('change', (port, value) => {
                 // Ignore buttons as they are handled below
-                adapter.log.debug('GPIO change on port ' + port + ': ' + value);
                 if (adapter.config.gpios[port].input == 'in') {
+                    adapter.log.debug('GPIO change on port ' + port + ': ' + value);
                     if (debounceTimers[port] != null) {
                         // Timer is running but state changed (must be back) so just cancel timer.
                         clearTimeout(debounceTimers[port]);
