@@ -699,8 +699,8 @@ function setupDht(dhtPorts) {
                             adapter.log.error(`Failed to read DHTxx/AM23xx: ${type}/${port}`);
                         } else {
                             adapter.log.debug(`Read DHTxx/AM23xx: ${type}/${port} : ${temperature}°C, humidity: ${humidity}%`);
-                            adapter.setState(temperatureStateName(port), temperature, true);
-                            adapter.setState(humidityStateName(port), humidity, true);
+                            adapter.setStateChanged(temperatureStateName(port), temperature, true);
+                            adapter.setStateChanged(humidityStateName(port), humidity, true);
                         }
                     });
                 }
