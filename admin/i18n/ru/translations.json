@@ -27,5 +27,7 @@
     "Button long press period (ms)": "Длительность нажатия кнопки (мс)",
     "Button double click period (ms)": "Период двойного нажатия кнопки (мс)",
     "Enable": "включить",
-    "Label": "этикетка"
+    "Label": "этикетка",
+    "Polling interval for DHTxx/AM23xx devices (ms)": "Интервал опроса для устройств DHTxx / AM23xx (мс)",
+    "Minimum recommended is 2s. Set to zero to disable polling.": "Рекомендуемый минимум - 2 секунды. Установите в ноль, чтобы отключить опрос."
 }

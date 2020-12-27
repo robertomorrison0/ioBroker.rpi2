@@ -7,8 +7,10 @@
 
 const utils = require('@iobroker/adapter-core'); // Get common adapter utils
 let gpio;
+let gpioButtons;
 let errorsLogged = {};
 const debounceTimers = [];
+const intervalTimers = [];
 
 // Which button events will we capture and have states for?
 // See https://www.npmjs.com/package/rpi-gpio-buttons
@@ -65,18 +67,26 @@ const adapter = new utils.Adapter({
             }
         }
     },
-    unload: function (callback) {
+    unload: async function () {
+        // Cancel any intervals
+        for (const interval of intervalTimers) {
+            clearInterval(interval);
+        }
         // Cancel any debounce timers
-        debounceTimers.forEach((timer) => {
+        for (const timer of debounceTimers) {
             if (timer != null) {
                 clearTimeout(timer);
             }
-        });
-        // TODO: destroy rpi-gpio-buttons when this is fixed: https://github.com/bnielsen1965/rpi-gpio-buttons/issues/9
+        };
         if (gpio) {
-            gpio.destroy(() => callback && callback());
-        } else {
-            callback && callback();
+            if (gpioButtons) {
+                await gpioButtons.destroy().catch((err) => {
+                    console.error(`Failed to destroy gpioButtons: ${err}`);
+                });
+            };
+            await gpio.promise.destroy().catch((err) => {
+                console.error(`Failed to destroy gpio: ${err}`);
+            });
         }
     }
 });
@@ -123,7 +133,7 @@ let oldstyle = false;
 function main() {
     if (anyParserConfigEnabled()) {
         // TODO: Check which Objects we provide
-        setInterval(parser, adapter.config.interval || 60000);
+        intervalTimers.push(setInterval(parser, adapter.config.interval || 60000));
 
         const version = process.version;
         const va = version.split('.');
@@ -410,8 +420,10 @@ async function deleteState(stateName) {
 }
 
 async function syncPort(port, data) {
+    data.isGpio = (data.input === 'in' || data.input === 'out' || data.input === 'outlow' || data.input === 'outhigh');
     data.isButton = (data.input === 'button');
-    data.isInput = (data.input === 'in' || data.input === 'true' || data.input === true || data.isButton);
+    data.isTempHum = (data.input === 'dht11' || data.input === 'dht22');
+    data.isInput = (data.input === 'in' || data.isButton || data.isTempHum);
 
     const channelName = 'gpio.' + port;
     if (data.enabled) {
@@ -423,12 +435,10 @@ async function syncPort(port, data) {
                 role: 'info'
             }
         });
-    } else {
-        await deleteObject(channelName);
     }
     
     const stateName = 'gpio.' + port + '.state';
-    if (data.enabled && !data.isButton) {
+    if (data.enabled && data.isGpio) {
         const obj = {
             common: {
                 name:  'GPIO ' + port,
@@ -448,6 +458,13 @@ async function syncPort(port, data) {
     }
     await syncPortDirection(port, data);
     await syncPortButton(port, data);
+    await syncPortTempHum(port, data);
+
+    // Delete the channel only after everything will have been removed or
+    // we end up with junk in the object tree.
+    if (!data.enabled) {
+        await deleteObject(channelName);
+    }
 }
 
 async function syncPortDirection(port, data) {
@@ -500,123 +517,95 @@ async function syncPortButton(port, data) {
     };
 }
 
-async function initPorts() {
+function temperatureStateName(port) {
+    return 'gpio.' + port + '.temperature';
+}
+function humidityStateName(port) {
+    return 'gpio.' + port + '.humidity';
+}
+
+async function syncPortTempHum(port, data) {
+    if (data.enabled && data.isTempHum) {
+        const obj = {
+            common: {
+                name:  'GPIO ' + port + ' temperature',
+                type:  'number',
+                role:  'value.temperature',
+                read:  true,
+                write: false
+            },
+            native: {
+            },
+            type: 'state'
+        };
+        await adapter.extendObjectAsync(temperatureStateName(port), obj);
+    } else {
+        await deleteState(temperatureStateName(port));
+    }
+    if (data.enabled && data.isTempHum) {
+        const obj = {
+            common: {
+                name:  'GPIO ' + port + ' temperature',
+                type:  'number',
+                role:  'value.humidity',
+                read:  true,
+                write: false
+            },
+            native: {
+            },
+            type: 'state'
+        };
+        await adapter.extendObjectAsync(humidityStateName(port), obj);
+    } else {
+        await deleteState(humidityStateName(port));
+    }
+}
+
+// Setup GPIO ports & buttons
+function setupGpio(gpioPorts, buttonPorts) {
+    if (gpioPorts.length == 0 && buttonPorts.length == 0) return;
+
     adapter.log.debug('Inputs are pull ' + (adapter.config.inputPullUp ? 'up' : 'down') + '.');
     adapter.log.debug('Buttons are pull ' + (adapter.config.buttonPullUp ? 'up' : 'down') + '.');
 
-    let anyGpioEnabled = false;
-    let buttonPorts = [];
+    try {
+        gpio = require('rpi-gpio');
+        gpio.setMode(gpio.MODE_BCM);
+    } catch (e) {
+        gpio = null;
+        adapter.log.error('Cannot initialize/setMode GPIO: ' + e);
+    }
 
-    if (adapter.config.gpios && adapter.config.gpios.length) {
-        for (let pp = 0; pp < adapter.config.gpios.length; pp++) {
-            // syncPort sets up object tree. Do it now so all ready when
-            // physical GPIOs are enabled below.
+    if (gpio) {
+        // Our GPIO init worked, setup regular I/O & buttons.
+        let haveGpioInputs = false;
 
-            await syncPort(pp, adapter.config.gpios[pp] || {});
-
-            if (!adapter.config.gpios[pp] || !adapter.config.gpios[pp].enabled) continue;
-            if (adapter.config.gpios[pp].input == 'button') {
-                // This is a button - add to array to initialise module
-                buttonPorts.push(pp);
+        // Setup all the regular GPIO input and outputs.
+        for (const port of gpioPorts) {
+            const direction = adapter.config.gpios[port].input;
+            adapter.log.debug(`Port ${port} direction: ${direction}`);
+            if (direction == 'in') {
+                // Input port
+                haveGpioInputs = true;
+                gpio.setup(port, gpio.DIR_IN, gpio.EDGE_BOTH, (err) => {
+                    if (err) {
+                        adapter.log.error('Cannot setup port ' + port + ' as input: ' + err);
+                    } else {
+                        readValue(port);
+                    }
+                });
             } else {
-                // Must just be regular GPIO
-                anyGpioEnabled = true;
-            }
-        }
-    }
-
-    if (anyGpioEnabled) {
-        try {
-            gpio = require('rpi-gpio');
-        } catch (e) {
-            gpio = null;
-            adapter.log.error('Cannot initialize GPIO: ' + e);
-            console.error('Cannot initialize GPIO: ' + e);
-        }
-        try {
-            gpio.setMode(gpio.MODE_BCM);
-        } catch (e) {
-            gpio = null;
-            adapter.log.error('cannot use GPIO: ' + e);
-        }
-    }
-
-    let gpioButtons;
-    if (buttonPorts.length > 0) {
-        try {
-            const rpi_gpio_buttons = require('rpi-gpio-buttons');
-            gpioButtons = rpi_gpio_buttons(buttonPorts, {
-                mode: rpi_gpio_buttons.MODE_BCM,
-                usePullUp: adapter.config.buttonPullUp,
-                debounce: adapter.config.buttonDebounceMs,
-                pressed: adapter.config.buttonPressMs,
-                clicked: adapter.config.buttonDoubleMs
-            });
-        } catch (e) {
-            gpioButtons = null;
-            adapter.log.error('Cannot initialize GPIO Buttons: ' + e);
-        }
-    }
-
-    if (adapter.config.gpios && adapter.config.gpios.length) {
-        let haveInputs = false;
-        for (let p = 0; p < adapter.config.gpios.length; p++) {
-            if (!adapter.config.gpios[p]) continue;
-
-            if (gpio && adapter.config.gpios[p].enabled) {
-                /* Ensure backwards compatibility of property .input
-                 * in older versions, it was true for "in" and false for "out" 
-                 * in newer versions, it is "in", "out", "outlow" or "outhigh"
-                 */
-                if (adapter.config.gpios[p].input === 'true' || adapter.config.gpios[p].input === true) {
-                    adapter.config.gpios[p].input = 'in';
-                }
-                else if (adapter.config.gpios[p].input === 'false' || adapter.config.gpios[p].input === false) {
-                    adapter.config.gpios[p].input = 'out';
-                }
-
-                switch(adapter.config.gpios[p].input) {
-                    case 'in':
-                        (function (port) {
-                            haveInputs = true;
-                            gpio.setup(port, gpio.DIR_IN, gpio.EDGE_BOTH, (err) => {
-                                if (err) {
-                                    adapter.log.error('Cannot setup port ' + port + ' as input: ' + err);
-                                } else {
-                                    readValue(port);
-                                }
-                            });
-                        })(p);
-                        break;
-                    case 'button':
-                        // Do nothing - jus here to prevent error below.
-                        break;
-                    case 'out':
-                        (function (port){
-                            gpio.setup(port, gpio.DIR_OUT, err =>
-                                err && adapter.log.error('Cannot setup port ' + port + ' as output: ' + err));
-                        })(p);
-                        break;
-                    case 'outlow':
-                        (function (port){
-                            gpio.setup(port, gpio.DIR_LOW, err =>
-                                err && adapter.log.error('Cannot setup port ' + port + ' as output with initial value "0": ' + err));
-                        })(p);
-                        break;
-                    case 'outhigh':
-                        (function (port){
-                            gpio.setup(port, gpio.DIR_HIGH, err =>
-                                err && adapter.log.error('Cannot setup port ' + port + ' as output with initial value "1": ' + err));
-                        })(p);
-                        break;
-                    default:
-                        adapter.log.error('Cannot setup port ' + port + ': invalid direction type.');
-                }
+                // All the different flavours of output
+                const directionCode = direction == 'outlow' ? gpio.DIR_LOW : direction == 'outhigh' ? gpio.DIR_HIGH : gpio.DIR_OUT;
+                adapter.log.debug(`Port ${port} directionCode: ${directionCode}`);
+                gpio.setup(port, directionCode, (err) => {
+                    err && adapter.log.error('Cannot setup port ' + port + ' as output: ' + err);
+                });
             }
         }
 
-        // Setup input change handler - only has to be done once no matter how many inputs we have
-        if (haveInputs && gpio) {
+        // Setup input change handler - only has to be done once no matter how many inputs we have.
+        if (haveGpioInputs) {
             adapter.log.debug('Register onchange handler');
             gpio.on('change', (port, value) => {
                 // Ignore buttons as they are handled below
@@ -638,16 +627,138 @@ async function initPorts() {
             });
         }
 
-        // Setup events for buttons - only has to be done once no matter how many buttons we have
-        if (buttonPorts.length > 0 && gpioButtons /* to check init was good */) {
-            buttonEvents.forEach((eventName) => {
-                gpioButtons.on(eventName, (port) => {
-                    adapter.log.debug(`${eventName} triggered for port ${port}`);
-                    const stateName = buttonStateName(port, eventName);
-                    adapter.setState(stateName, true, true);
+        // Setup any buttons using same rpi-gpio object as other I/O.
+        if (buttonPorts.length > 0) {
+            adapter.log.debug(`Setting up button ports: ${buttonPorts}`);
+            try {
+                const rpi_gpio_buttons = require('rpi-gpio-buttons');
+                gpioButtons = new rpi_gpio_buttons({
+                    pins: buttonPorts,
+                    usePullUp: adapter.config.buttonPullUp,
+                    timing: {
+                        debounce: adapter.config.buttonDebounceMs,
+                        pressed: adapter.config.buttonPressMs,
+                        clicked: adapter.config.buttonDoubleMs
+                    },
+                    gpio: gpio
                 });
-            });
+            } catch (e) {
+                gpioButtons = null;
+                adapter.log.error('Cannot initialize GPIO Buttons: ' + e);
+            }
+
+            // Setup events for buttons - only has to be done once no matter how many buttons we have.
+            if (gpioButtons) {
+                for (const eventName of buttonEvents) {
+                    adapter.log.debug(`Register button handler for ${eventName}`);
+                    gpioButtons.on(eventName, (port) => {
+                        adapter.log.debug(`${eventName} triggered for port ${port}`);
+                        const stateName = buttonStateName(port, eventName);
+                        adapter.setState(stateName, true, true);
+                    });
+                };
+                // And start button processing
+                gpioButtons.init().catch(err => {
+                    adapter.log.error(`An error occurred during buttons init(). ${err.message}`);
+                });                        
+            }
+        }    
+    }
+}
+
+// Setup DHTxx/AM23xx sensors
+function setupDht(dhtPorts) {
+    if (dhtPorts.length == 0) return;
+    let pollInterval = adapter.config.dhtPollInterval;
+    if (pollInterval == 0) {
+        adapter.log.warn('DHTxx/AM23xx configured but polling disabled');
+    } else if (pollInterval < 350) {
+        adapter.log.error(`DHTxx/AM23xx polling interval seems too short (${pollInterval}) - disabling`);
+    } else {
+        // Config is good
+        const sensorLib = require('node-dht-sensor');
+
+        // Initialise ports, keeping track of those that worked with type
+        const dhtInitd = [];
+        for (const port of dhtPorts) {
+            const type = adapter.config.gpios[port].input == 'dht11' ? 11 : 22;
+            try {
+                sensorLib.initialize(type, port);
+                dhtInitd[port] = [type];
+            } catch (err) {
+                adapter.log.error(`Failed to initialise DHTxx/AM23xx: ${type}/${port}`);
+            }
         }
+
+        if (dhtInitd.length > 0) {
+            // At least one initialised, set polling on configured interval
+            intervalTimers.push(setInterval(() => {
+                for (const [port, type] of Object.entries(dhtInitd)) {
+                    sensorLib.read(type, port, function(err, temperature, humidity) {
+                        if (err) {
+                            adapter.log.error(`Failed to read DHTxx/AM23xx: ${type}/${port}`);
+                        } else {
+                            adapter.log.debug(`Read DHTxx/AM23xx: ${type}/${port} : ${temperature}°C, humidity: ${humidity}%`);
+                            adapter.setStateChanged(temperatureStateName(port), temperature, true);
+                            adapter.setStateChanged(humidityStateName(port), humidity, true);
+                        }
+                    });
+                }
+            }, pollInterval));
+        }
+    }
+}
+
+async function initPorts() {    
+    if (adapter.config.gpios && adapter.config.gpios.length) {
+        let gpioPorts = [];
+        let buttonPorts = [];
+        let dhtPorts = [];
+    
+        for (let port = 0; port < adapter.config.gpios.length; port++) {
+            if (adapter.config.gpios[port]) {
+                /* Ensure backwards compatibility of property .input
+                * in older versions, it was true for "in" and false for "out" 
+                * in newer versions, it is "in", "out", "outlow" or "outhigh"
+                * Do this now so we only have to check for newer versions everywhere else.
+                */
+                if (adapter.config.gpios[port].input === 'true' || adapter.config.gpios[port].input === true) {
+                    adapter.config.gpios[port].input = 'in';
+                }
+                else if (adapter.config.gpios[port].input === 'false' || adapter.config.gpios[port].input === false) {
+                    adapter.config.gpios[port].input = 'out';
+                }
+            }
+
+            // syncPort sets up object tree. Do it now so all ready when
+            // physical GPIOs are enabled below.
+            await syncPort(port, adapter.config.gpios[port] || {});
+
+            if (!adapter.config.gpios[port] || !adapter.config.gpios[port].enabled) continue;
+
+            // Push port numbers into arrays as required for setup below.
+
+            switch(adapter.config.gpios[port].input) {
+                case 'in':
+                case 'out':
+                case 'outlow':
+                case 'outhigh':
+                    gpioPorts.push(port);
+                    break;
+                case 'button':
+                    buttonPorts.push(port);
+                    break;
+                case 'dht11':
+                case 'dht22':
+                    dhtPorts.push(port);
+                    break;
+                default:
+                    adapter.log.error('Cannot setup port ' + port + ': invalid direction type.');
+            }
+        }
+
+        setupGpio(gpioPorts, buttonPorts);
+        setupDht(dhtPorts);
     } else {
         adapter.log.info('GPIO ports are not configured');
     }

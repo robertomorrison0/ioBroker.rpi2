@@ -27,5 +27,7 @@
     "Button long press period (ms)": "Período de pressão longa do botão (ms)",
     "Button double click period (ms)": "Período de duplo clique do botão (ms)",
     "Enable": "Habilitar",
-    "Label": "Rótulo"
+    "Label": "Rótulo",
+    "Polling interval for DHTxx/AM23xx devices (ms)": "Intervalo de pesquisa para dispositivos DHTxx / AM23xx (ms)",
+    "Minimum recommended is 2s. Set to zero to disable polling.": "O mínimo recomendado é 2s. Defina como zero para desativar a pesquisa."
 }

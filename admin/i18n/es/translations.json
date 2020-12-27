@@ -27,5 +27,7 @@
     "Button long press period (ms)": "Período de pulsación prolongada del botón (ms)",
     "Button double click period (ms)": "Período de doble clic del botón (ms)",
     "Enable": "Habilitar",
-    "Label": "Etiqueta"
+    "Label": "Etiqueta",
+    "Polling interval for DHTxx/AM23xx devices (ms)": "Intervalo de sondeo para dispositivos DHTxx / AM23xx (ms)",
+    "Minimum recommended is 2s. Set to zero to disable polling.": "El mínimo recomendado es 2 s. Establecer en cero para deshabilitar el sondeo."
 }

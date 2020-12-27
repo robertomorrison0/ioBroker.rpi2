@@ -27,5 +27,7 @@
     "Button long press period (ms)": "Knop lang indrukken (ms)",
     "Button double click period (ms)": "Knop dubbelklikperiode (ms)",
     "Enable": "Inschakelen",
-    "Label": "Label"
+    "Label": "Label",
+    "Polling interval for DHTxx/AM23xx devices (ms)": "Polling-interval voor DHTxx / AM23xx-apparaten (ms)",
+    "Minimum recommended is 2s. Set to zero to disable polling.": "Minimaal aanbevolen is 2 sec. Stel in op nul om polling uit te schakelen."
 }

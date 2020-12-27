@@ -27,5 +27,7 @@
     "Button long press period (ms)": "按钮长按周期（毫秒）",
     "Button double click period (ms)": "按钮双击时间（毫秒）",
     "Enable": "启用",
-    "Label": "标签"
+    "Label": "标签",
+    "Polling interval for DHTxx/AM23xx devices (ms)": "DHTxx / AM23xx设备的轮询间隔（ms）",
+    "Minimum recommended is 2s. Set to zero to disable polling.": "推荐的最小值为2秒。设置为零可禁用轮询。"
 }
