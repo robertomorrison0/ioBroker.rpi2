@@ -570,7 +570,7 @@ function setupGpio(gpioPorts, buttonPorts) {
 
     try {
         gpio = require('rpi-gpio');
-        gpio.setMode(gpio.MODE_BCM);
+        gpio.setMode(gpio.MODE_BOARD);
     } catch (e) {
         gpio = null;
         adapter.log.error('Cannot initialize/setMode GPIO: ' + e);
